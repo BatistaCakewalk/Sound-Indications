@@ -1,0 +1,31 @@
+{
+  "hunger": {
+    "sounds": [
+      "a-z:hunger_1",
+      "a-z:hunger_2",
+      "a-z:hunger_3",
+      "a-z:hunger_4"
+    ]
+  },
+  "digestion": {
+    "sounds": [
+      "a-z:digestion"
+    ]
+  },
+  "low_hp": {
+    "sounds": [
+      {
+        "name": "a-z:low_hp",
+        "stream": true
+      }
+    ]
+  },
+  "anxiety": {
+    "sounds": [
+      {
+        "name": "a-z:anxiety",
+        "stream": true
+      }
+    ]
+  }
+}

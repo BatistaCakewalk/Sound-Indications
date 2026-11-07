@@ -1,0 +1,45 @@
+# Gradle
+.gradle/
+build/
+
+# Fabric / Minecraft run environments
+run/
+run-client/
+run-server/
+run-datagen/
+*.log
+logs/
+crash-reports/
+usercache.json
+usernamecache.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Visual Studio Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Root-level working audio source files (assets are in src/.../assets/a-z/sounds/)
+/*.wav
+/LowHP.ogg
