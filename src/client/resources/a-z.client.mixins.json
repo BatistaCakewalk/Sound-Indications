@@ -6,6 +6,7 @@
   "client": [
     "ChannelAccessor",
     "ChannelHandleAccessor",
+    "ChannelMixin",
     "SoundEngineAccessor",
     "SoundManagerAccessor",
     "SoundEngineMixin"

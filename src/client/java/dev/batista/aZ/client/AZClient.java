@@ -132,7 +132,8 @@ public class AZClient implements ClientModInitializer {
             vignetteIntensity = Math.max(0.0f, vignetteIntensity - 0.1f);
         }
 
-        AZFilterManager.tick(sounds, cfg, currentHealth, canHaveEffects);
+        boolean isUnderwater = player.isUnderWater() && !player.isSpectator();
+        AZFilterManager.tick(sounds, cfg, currentHealth, canHaveEffects, isUnderwater);
         fadeMusic(sounds, wantFadeOutMusic);
     }
 

@@ -2,7 +2,6 @@ package dev.batista.aZ.client;
 
 import com.mojang.blaze3d.audio.Channel;
 import dev.batista.aZ.mixin.client.ChannelAccessor;
-import dev.batista.aZ.mixin.client.ChannelHandleAccessor;
 import dev.batista.aZ.mixin.client.SoundEngineAccessor;
 import dev.batista.aZ.mixin.client.SoundManagerAccessor;
 import net.minecraft.client.resources.sounds.SoundInstance;
@@ -20,9 +19,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages an OpenAL EFX low-pass filter to muffle world audio when health is low.
+ * Manages an OpenAL EFX low-pass filter to muffle world audio and background music
+ * when health is low or while submerged underwater.
  * Excludes internal vitals (Low HP heartbeat / anxiety song, stomach sounds, UI clicks)
- * to produce the dramatic "tunnel vision" audio effect.
+ * to keep player feedback crisp and recognizable.
  */
 public final class AZFilterManager {
 
@@ -41,6 +41,10 @@ public final class AZFilterManager {
         return muffleActive;
     }
 
+    public static int getFilterId() {
+        return filterId;
+    }
+
     public static float getCurrentGainHF() {
         return currentGainHF;
     }
@@ -53,13 +57,20 @@ public final class AZFilterManager {
         if (sound == null) {
             return false;
         }
+        // Low HP sound / anxiety song is an internal vital cue and stays crisp
         if (sound instanceof LowHpSoundInstance) {
             return true;
         }
+        // Stomach hunger growls & digestion sounds from IndicationSounds
         if (sound.getIdentifier() != null && "a-z".equals(sound.getIdentifier().getNamespace())) {
             return true;
         }
+        // UI clicks (inventory, menu)
         if (cfg.keepUIUnmuffled && sound.getSource() == SoundSource.UI) {
+            return true;
+        }
+        // If user disabled music muffling, keep background music clear
+        if (!cfg.muffleMusic && (sound.getSource() == SoundSource.MUSIC || sound.getSource() == SoundSource.RECORDS)) {
             return true;
         }
         return false;
@@ -68,21 +79,34 @@ public final class AZFilterManager {
     /**
      * Called every client tick from {@link AZClient#onTick}.
      */
-    public static void tick(SoundManager soundManager, AZConfig cfg, float health, boolean shouldMuffle) {
-        boolean wantMuffle = shouldMuffle && cfg.lowHpMuffleAudio && (health <= cfg.lowHpThresholdHearts * 2f);
+    public static void tick(SoundManager soundManager, AZConfig cfg, float health, boolean canHaveEffects, boolean isUnderwater) {
+        boolean lowHpMuffle = canHaveEffects && cfg.lowHpMuffleAudio && (health <= cfg.lowHpThresholdHearts * 2f);
+        boolean underWaterMuffle = isUnderwater && cfg.underwaterMuffleAudio;
 
-        if (wantMuffle) {
+        float desiredLowHpGain = 1.0f;
+        if (lowHpMuffle) {
             float threshold = cfg.lowHpThresholdHearts * 2f;
             float missingFraction = Math.max(0.0f, threshold - health) / Math.max(1.0f, threshold);
             float cutoff = Math.max(0.01f, Math.min(1.0f, cfg.lowHpMuffleCutoff));
             // Start smoothly at 0.60f at threshold, dropping down to cutoff at 0 health
-            targetGainHF = 0.60f - (0.60f - cutoff) * missingFraction;
+            desiredLowHpGain = 0.60f - (0.60f - cutoff) * missingFraction;
+        }
+
+        float desiredUnderwaterGain = 1.0f;
+        if (underWaterMuffle) {
+            desiredUnderwaterGain = Math.max(0.01f, Math.min(1.0f, cfg.underwaterMuffleCutoff));
+        }
+
+        boolean wantMuffle = lowHpMuffle || underWaterMuffle;
+        if (wantMuffle) {
+            // Use whichever muffling effect is stronger (lowest HF gain)
+            targetGainHF = Math.min(desiredLowHpGain, desiredUnderwaterGain);
             muffleActive = true;
         } else {
             targetGainHF = 1.0f;
         }
 
-        // Smooth frequency lerp (~1.5s transition)
+        // Smooth frequency transition (~1.5s)
         currentGainHF += (targetGainHF - currentGainHF) * 0.15f;
         if (!wantMuffle && currentGainHF >= 0.98f) {
             currentGainHF = 1.0f;
@@ -108,10 +132,6 @@ public final class AZFilterManager {
      * Called when a sound is started by {@link SoundEngine#play}.
      */
     public static void onSoundStarted(SoundEngine soundEngine, SoundInstance sound) {
-        AZConfig cfg = AZConfig.get();
-        if (!muffleActive || currentGainHF >= 0.99f || !cfg.lowHpMuffleAudio || isExempt(sound, cfg)) {
-            return;
-        }
         if (!(soundEngine instanceof SoundEngineAccessor engineAccessor)) {
             return;
         }
@@ -120,9 +140,26 @@ public final class AZFilterManager {
             return;
         }
         ChannelAccess.ChannelHandle handle = map.get(sound);
-        if (handle != null) {
-            handle.execute(AZFilterManager::attachFilter);
+        if (handle == null) {
+            return;
         }
+
+        AZConfig cfg = AZConfig.get();
+        boolean exempt = isExempt(sound, cfg);
+        handle.execute(channel -> {
+            if (channel instanceof ChannelExemption channelEx) {
+                channelEx.indicationSounds$setExempt(exempt);
+            }
+            int source = ((ChannelAccessor) channel).indicationSounds$getSource();
+            if (source != 0) {
+                if (!exempt && muffleActive && currentGainHF < 0.99f && ensureFilter()) {
+                    AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, filterId);
+                } else {
+                    AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, EXTEfx.AL_FILTER_NULL);
+                }
+                AL10.alGetError();
+            }
+        });
     }
 
     /**
@@ -148,33 +185,58 @@ public final class AZFilterManager {
             AL10.alGetError();
         }
 
+        // 1. Tag and update all channels tracked in instanceToChannel
         Map<SoundInstance, ChannelAccess.ChannelHandle> map = engineAccessor.indicationSounds$getInstanceToChannel();
-        if (map == null || map.isEmpty()) {
-            return;
+        if (map != null && !map.isEmpty()) {
+            for (Map.Entry<SoundInstance, ChannelAccess.ChannelHandle> entry : map.entrySet()) {
+                SoundInstance sound = entry.getKey();
+                ChannelAccess.ChannelHandle handle = entry.getValue();
+                if (handle == null || handle.isStopped()) {
+                    continue;
+                }
+
+                boolean exempt = isExempt(sound, cfg);
+                handle.execute(channel -> {
+                    if (channel == null) {
+                        return;
+                    }
+                    if (channel instanceof ChannelExemption channelEx) {
+                        channelEx.indicationSounds$setExempt(exempt);
+                    }
+                    int source = ((ChannelAccessor) channel).indicationSounds$getSource();
+                    if (source == 0) {
+                        return;
+                    }
+                    if (muffle && !exempt && ensureFilter()) {
+                        AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, filterId);
+                    } else {
+                        AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, EXTEfx.AL_FILTER_NULL);
+                    }
+                    AL10.alGetError();
+                });
+            }
         }
 
-        for (Map.Entry<SoundInstance, ChannelAccess.ChannelHandle> entry : map.entrySet()) {
-            SoundInstance sound = entry.getKey();
-            ChannelAccess.ChannelHandle handle = entry.getValue();
-            if (handle == null || handle.isStopped()) {
-                continue;
-            }
-
-            boolean exempt = isExempt(sound, cfg);
-            handle.execute(channel -> {
-                if (channel == null) {
-                    return;
-                }
-                int source = ((ChannelAccessor) channel).indicationSounds$getSource();
-                if (source == 0) {
-                    return;
-                }
-                if (muffle && !exempt && ensureFilter()) {
-                    AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, filterId);
-                } else {
-                    AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, EXTEfx.AL_FILTER_NULL);
-                }
-                AL10.alGetError();
+        // 2. Also execute across ALL channels in ChannelAccess (guarantees streaming background music, discs, ambient)
+        ChannelAccess channelAccess = engineAccessor.indicationSounds$getChannelAccess();
+        if (channelAccess != null) {
+            channelAccess.executeOnChannels(channelsStream -> {
+                channelsStream.forEach(channel -> {
+                    if (channel == null) {
+                        return;
+                    }
+                    boolean exempt = (channel instanceof ChannelExemption chEx) && chEx.indicationSounds$isExempt();
+                    int source = ((ChannelAccessor) channel).indicationSounds$getSource();
+                    if (source == 0) {
+                        return;
+                    }
+                    if (muffle && !exempt && ensureFilter()) {
+                        AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, filterId);
+                    } else {
+                        AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, EXTEfx.AL_FILTER_NULL);
+                    }
+                    AL10.alGetError();
+                });
             });
         }
     }
@@ -196,17 +258,6 @@ public final class AZFilterManager {
             } else {
                 AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, EXTEfx.AL_FILTER_NULL);
             }
-            AL10.alGetError();
-        }
-    }
-
-    private static void attachFilter(Channel channel) {
-        if (channel == null) {
-            return;
-        }
-        int source = ((ChannelAccessor) channel).indicationSounds$getSource();
-        if (source != 0 && ensureFilter()) {
-            AL10.alSourcei(source, EXTEfx.AL_DIRECT_FILTER, filterId);
             AL10.alGetError();
         }
     }

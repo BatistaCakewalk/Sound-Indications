@@ -16,4 +16,7 @@ public interface SoundEngineAccessor {
 
     @Accessor("executor")
     SoundEngineExecutor indicationSounds$getExecutor();
+
+    @Accessor("channelAccess")
+    ChannelAccess indicationSounds$getChannelAccess();
 }

@@ -28,10 +28,16 @@ public class AZConfig {
     public boolean useAnxietySong = false;
     /** Muffle world audio with a low-pass filter while health is low. */
     public boolean lowHpMuffleAudio = true;
-    /** Keep UI sounds (inventory clicks, etc.) unmuffled while health is low. */
+    /** Muffle world audio with a low-pass filter while submerged underwater. */
+    public boolean underwaterMuffleAudio = true;
+    /** Muffle Minecraft's background music along with world audio. */
+    public boolean muffleMusic = true;
+    /** Keep UI sounds (inventory clicks, etc.) unmuffled while health is low or underwater. */
     public boolean keepUIUnmuffled = true;
     /** Lowest high-frequency gain cutoff for low-pass filter at critical health (0.05 - 0.50). */
     public float lowHpMuffleCutoff = 0.15f;
+    /** Lowest high-frequency gain cutoff for low-pass filter when submerged underwater (0.05 - 0.50). */
+    public float underwaterMuffleCutoff = 0.25f;
     /** Pulsing red vignette overlay on the screen edges when health is low. */
     public boolean lowHpVignette = true;
     /** Flashes a red vignette overlay for ~1 second when taking damage. */
