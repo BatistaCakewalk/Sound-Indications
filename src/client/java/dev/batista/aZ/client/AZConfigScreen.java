@@ -25,7 +25,7 @@ public final class AZConfigScreen {
                         .name(Component.literal("Sounds"))
                         .option(toggle("Hunger sound", "Stomach growls while hungry.",
                                 defaults.hungerEnabled, () -> cfg.hungerEnabled, v -> cfg.hungerEnabled = v))
-                        .option(toggle("Digestion sound", "Plays when your body burns saturation.",
+                        .option(toggle("Digestion sound", "Plays when your body burns saturation. (Why? Why not!)",
                                 defaults.digestionEnabled, () -> cfg.digestionEnabled, v -> cfg.digestionEnabled = v))
                         .option(toggle("Low health sound", "Plays while your health is low.",
                                 defaults.lowHpEnabled, () -> cfg.lowHpEnabled, v -> cfg.lowHpEnabled = v))

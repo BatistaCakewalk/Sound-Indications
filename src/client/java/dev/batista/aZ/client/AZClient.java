@@ -339,7 +339,7 @@ public class AZClient implements ClientModInitializer {
     /** Called when there is no player (title screen, leaving a world). Restores everything instantly. */
     private void resetAll(SoundManager sounds) {
         stopImmediately(sounds);
-        AZFilterManager.reset();
+        AZFilterManager.releaseAll(sounds);
         hungerTimer = -1;
         lastSaturation = -1f;
         lastFoodLevel = -1;

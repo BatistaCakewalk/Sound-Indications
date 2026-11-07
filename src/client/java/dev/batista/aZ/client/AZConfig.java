@@ -22,7 +22,7 @@ public class AZConfig {
 
     // ---- Toggles ----
     public boolean hungerEnabled = true;
-    public boolean digestionEnabled = true;
+    public boolean digestionEnabled = false;
     public boolean lowHpEnabled = true;
     /** Replace the low health sound with the anxiety song (also fades out Minecraft's music). */
     public boolean useAnxietySong = false;
@@ -35,9 +35,9 @@ public class AZConfig {
     /** Keep UI sounds (inventory clicks, etc.) unmuffled while health is low or underwater. */
     public boolean keepUIUnmuffled = true;
     /** Lowest high-frequency gain cutoff for low-pass filter at critical health (0.05 - 0.50). */
-    public float lowHpMuffleCutoff = 0.15f;
+    public float lowHpMuffleCutoff = 0.5f;
     /** Lowest high-frequency gain cutoff for low-pass filter when submerged underwater (0.05 - 0.50). */
-    public float underwaterMuffleCutoff = 0.25f;
+    public float underwaterMuffleCutoff = 0.5f;
     /** Pulsing red vignette overlay on the screen edges when health is low. */
     public boolean lowHpVignette = true;
     /** Flashes a red vignette overlay for ~1 second when taking damage. */
