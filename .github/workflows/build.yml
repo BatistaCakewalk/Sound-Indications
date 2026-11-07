@@ -3,14 +3,19 @@ name: Build
 # Branch layout (names are case-sensitive):
 #   Snapshots/<mc version>  ->  pre-release builds for that Minecraft version
 #   Stable/<mc version>     ->  release builds for that Minecraft version
-# Every push to one of those branches publishes a GitHub release for it.
-# master and pull requests only compile, nothing is published.
+# Non-Markdown pushes to those branches publish a GitHub release.
+# Markdown-only pushes are ignored; master and pull requests only compile, nothing is published.
 on:
   push:
     branches:
       - master
       - 'Snapshots/**'
       - 'Stable/**'
+    paths-ignore:
+      - '**.md'
+      - '**.markdown'
+      - '**.mdx'
+      - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
 
