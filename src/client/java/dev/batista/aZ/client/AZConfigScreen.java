@@ -4,6 +4,7 @@ import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
+import dev.isxander.yacl3.api.LabelOption;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.FloatFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.FloatSliderControllerBuilder;
@@ -14,7 +15,6 @@ import dev.isxander.yacl3.gui.utils.GuiUtils;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -65,10 +65,13 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder audioCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Audio"))
+                .option(LabelOption.create(Component.literal("\u2014 HUNGER & DIGESTION \u2014")))
                 .option(hunger)
                 .option(digestion)
+                .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH AUDIO \u2014")))
                 .option(lowHealth)
                 .option(anxiety)
+                .option(LabelOption.create(Component.literal("\u2014 ENVIRONMENTAL FILTERING \u2014")))
                 .option(lowHealthMuffle)
                 .option(underwaterMuffle)
                 .option(muffleMusic)
@@ -98,8 +101,10 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder volumeCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Volume & Mixing"))
+                .option(LabelOption.create(Component.literal("\u2014 HUNGER & DIGESTION \u2014")))
                 .option(hungerVolume)
                 .option(digestionVolume)
+                .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH AUDIO \u2014")))
                 .option(lowHealthVolume)
                 .option(anxietyVolume);
         addCategoryReset(volumeCategory, volumeOptions);
@@ -123,8 +128,10 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder visualsCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Visual Effects"))
+                .option(LabelOption.create(Component.literal("\u2014 SCREEN EFFECTS \u2014")))
                 .option(lowHealthVignette)
                 .option(damageVignette)
+                .option(LabelOption.create(Component.literal("\u2014 INTENSITY \u2014")))
                 .option(vignetteIntensity);
         addCategoryReset(visualsCategory, visualOptions);
 
@@ -145,7 +152,9 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder thresholdsCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Triggers & Thresholds"))
+                .option(LabelOption.create(Component.literal("\u2014 HUNGER \u2014")))
                 .option(hungerThreshold)
+                .option(LabelOption.create(Component.literal("\u2014 HEALTH \u2014")))
                 .option(lowHealthThreshold);
         addCategoryReset(thresholdsCategory, thresholdOptions);
 
@@ -179,8 +188,10 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder timingCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Intervals & Timing"))
+                .option(LabelOption.create(Component.literal("\u2014 HUNGER SOUNDS \u2014")))
                 .option(hungerMinGap)
                 .option(hungerMaxGap)
+                .option(LabelOption.create(Component.literal("\u2014 DIGESTION SOUNDS \u2014")))
                 .option(digestionCooldown);
         addCategoryReset(timingCategory, timingOptions);
 
@@ -201,7 +212,9 @@ public final class AZConfigScreen {
 
         ConfigCategory.Builder advancedCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Advanced Audio"))
+                .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH FILTER \u2014")))
                 .option(lowHealthCutoff)
+                .option(LabelOption.create(Component.literal("\u2014 UNDERWATER FILTER \u2014")))
                 .option(underwaterCutoff);
         addCategoryReset(advancedCategory, advancedOptions);
 
@@ -222,7 +235,6 @@ public final class AZConfigScreen {
                         Component.literal("All IndicationSounds options will be restored to their defaults.")
                 )))
                 .build());
-
         return YetAnotherConfigLib.createBuilder()
                 .title(Component.literal("IndicationSounds"))
                 .category(audioCategory.build())

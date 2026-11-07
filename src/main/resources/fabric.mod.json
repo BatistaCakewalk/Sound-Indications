@@ -4,8 +4,12 @@
   "version": "${version}",
   "name": "IndicationSounds",
   "description": "Sound and visual indications for the player, like reaction sounds when hunger or health is low.",
-  "authors": [],
-  "contact": {},
+  "authors": ["Batista"],
+  "contact": {
+    "homepage": "https://github.com/BatistaCakewalk/Sound-Indications",
+    "issues": "https://github.com/BatistaCakewalk/Sound-Indications/issues",
+    "sources": "https://github.com/BatistaCakewalk/Sound-Indications"
+  },
   "license": "GPL-3.0",
   "icon": "assets/a-z/icon.png",
   "environment": "client",
