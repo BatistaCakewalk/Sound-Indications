@@ -1,0 +1,115 @@
+name: Build
+
+# Branch layout (names are case-sensitive):
+#   Snapshots/<mc version>  ->  pre-release builds for that Minecraft version
+#   Stable/<mc version>     ->  release builds for that Minecraft version
+# Every push to one of those branches publishes a GitHub release for it.
+# master and pull requests only compile, nothing is published.
+on:
+  push:
+    branches:
+      - master
+      - 'Snapshots/**'
+      - 'Stable/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to create releases
+
+# Newer pushes cancel older PR builds, but never cancel a branch build mid-release.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Version = <mod_version>.<build number>[-channel]+<minecraft version>
+      #   Stable/26.2     mod_version=1.0, run #7  ->  1.0.7+26.2
+      #   Snapshots/26.2  mod_version=1.0, run #8  ->  1.0.8-snapshot+26.2
+      # The Minecraft version comes from the branch's own gradle.properties, so each branch
+      # builds against its own Minecraft, Fabric API, Mod Menu and YACL versions.
+      # Nothing is committed back, so there are no loops and no manual bumping.
+      - name: Compute version
+        id: ver
+        run: |
+          BASE=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '\r[:space:]')
+          MC=$(grep -E '^minecraft_version=' gradle.properties | cut -d= -f2 | tr -d '\r[:space:]')
+          NAME=$(grep -E '^archives_base_name=' gradle.properties | cut -d= -f2 | tr -d '\r[:space:]')
+
+          case "${GITHUB_REF_NAME}" in
+            Snapshots/*) CHANNEL=snapshot ;;
+            Stable/*)    CHANNEL=stable ;;
+            *)           CHANNEL=dev ;;
+          esac
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then CHANNEL=dev; fi
+
+          case "${CHANNEL}" in
+            stable)   VERSION="${BASE}.${GITHUB_RUN_NUMBER}+${MC}" ;;
+            snapshot) VERSION="${BASE}.${GITHUB_RUN_NUMBER}-snapshot+${MC}" ;;
+            *)        VERSION="${BASE}.${GITHUB_RUN_NUMBER}-dev+${MC}" ;;
+          esac
+
+          # Heads-up if the branch name and gradle.properties disagree (e.g. Stable/26.3 still on 26.2)
+          if [ "${CHANNEL}" != "dev" ] && [ "${GITHUB_REF_NAME##*/}" != "${MC}" ]; then
+            echo "::warning::Branch '${GITHUB_REF_NAME}' builds Minecraft ${MC} (from gradle.properties). Check minecraft_version."
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "mc=${MC}" >> "$GITHUB_OUTPUT"
+          echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
+          echo "Building ${VERSION} (${CHANNEL}) for Minecraft ${MC}"
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew build -Pmod_version="${{ steps.ver.outputs.version }}" --stacktrace
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.version }}
+          path: build/libs/${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.version }}.jar
+          if-no-files-found: error
+
+      # Only Snapshots/* and Stable/* branches publish.
+      - name: Publish GitHub release
+        if: steps.ver.outputs.channel != 'dev'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          NAME: ${{ steps.ver.outputs.name }}
+          MC: ${{ steps.ver.outputs.mc }}
+          CHANNEL: ${{ steps.ver.outputs.channel }}
+        run: |
+          if [ "${CHANNEL}" = "snapshot" ]; then
+            FLAGS="--prerelease"
+            TITLE="Indication Sounds ${VERSION} (Pre-release, Minecraft ${MC})"
+          else
+            FLAGS=""
+            TITLE="Indication Sounds ${VERSION} (Minecraft ${MC})"
+          fi
+          gh release create "$TAG" \
+            "build/libs/${NAME}-${VERSION}.jar" \
+            "build/libs/${NAME}-${VERSION}-sources.jar" \
+            --target "$GITHUB_SHA" \
+            --title "$TITLE" \
+            --generate-notes \
+            $FLAGS
