@@ -21,6 +21,9 @@
     ],
     "modmenu": [
       "dev.batista.aZ.client.AZModMenu"
+    ],
+    "voicechat": [
+      "dev.batista.aZ.client.voicechat.AZVoicechatPlugin"
     ]
   },
   "mixins": [

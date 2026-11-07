@@ -41,6 +41,10 @@ repositories {
         name = 'Xander'
         url = 'https://maven.isxander.dev/releases'
     }
+    maven {
+        name = 'Henkelmax'
+        url = 'https://maven.maxhenkel.de/repository/public'
+    }
 }
 
 dependencies {
@@ -53,6 +57,7 @@ dependencies {
     // Optional integrations (not required at runtime, see "suggests" in fabric.mod.json)
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+    compileOnly "de.maxhenkel.voicechat:voicechat-api:2.5.0"
 }
 
 processResources {

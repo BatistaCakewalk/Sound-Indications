@@ -117,7 +117,8 @@ public class AZClient implements ClientModInitializer {
         updateDamageFlash();
 
         boolean wantFadeOutMusic = false;
-        if (player.isAlive() && !player.isCreative() && !player.isSpectator()) {
+        boolean canHaveEffects = player.isAlive() && !player.isCreative() && !player.isSpectator();
+        if (canHaveEffects) {
             FoodData food = player.getFoodData();
             handleHunger(sounds, cfg, food.getFoodLevel());
             handleDigestion(sounds, cfg, food.getFoodLevel(), food.getSaturationLevel());
@@ -131,6 +132,7 @@ public class AZClient implements ClientModInitializer {
             vignetteIntensity = Math.max(0.0f, vignetteIntensity - 0.1f);
         }
 
+        AZFilterManager.tick(sounds, cfg, currentHealth, canHaveEffects);
         fadeMusic(sounds, wantFadeOutMusic);
     }
 
@@ -336,6 +338,7 @@ public class AZClient implements ClientModInitializer {
     /** Called when there is no player (title screen, leaving a world). Restores everything instantly. */
     private void resetAll(SoundManager sounds) {
         stopImmediately(sounds);
+        AZFilterManager.reset();
         hungerTimer = -1;
         lastSaturation = -1f;
         lastFoodLevel = -1;

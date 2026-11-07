@@ -32,6 +32,16 @@ public final class AZConfigScreen {
                         .option(toggle("Anxiety song instead of low health sound",
                                 "Plays the anxiety song instead of the low health sound, and fades out Minecraft's music until your health recovers.",
                                 defaults.useAnxietySong, () -> cfg.useAnxietySong, v -> cfg.useAnxietySong = v))
+                        .option(toggle("Muffled audio at low health",
+                                "Muffles world sounds with an OpenAL low-pass filter when health is low.",
+                                defaults.lowHpMuffleAudio, () -> cfg.lowHpMuffleAudio, v -> cfg.lowHpMuffleAudio = v))
+                        .option(toggle("Keep UI unmuffled",
+                                "Keeps UI and inventory clicks crisp while low health muffled audio is active.",
+                                defaults.keepUIUnmuffled, () -> cfg.keepUIUnmuffled, v -> cfg.keepUIUnmuffled = v))
+                        .option(floatSlider("Low health muffle cutoff",
+                                "How muffled high frequencies become at critical health (lower = more muffled).",
+                                defaults.lowHpMuffleCutoff, 0.05f, 0.50f, 0.05f, true,
+                                () -> cfg.lowHpMuffleCutoff, v -> cfg.lowHpMuffleCutoff = v))
                         .build())
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Visuals"))

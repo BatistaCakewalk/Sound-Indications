@@ -26,6 +26,12 @@ public class AZConfig {
     public boolean lowHpEnabled = true;
     /** Replace the low health sound with the anxiety song (also fades out Minecraft's music). */
     public boolean useAnxietySong = false;
+    /** Muffle world audio with a low-pass filter while health is low. */
+    public boolean lowHpMuffleAudio = true;
+    /** Keep UI sounds (inventory clicks, etc.) unmuffled while health is low. */
+    public boolean keepUIUnmuffled = true;
+    /** Lowest high-frequency gain cutoff for low-pass filter at critical health (0.05 - 0.50). */
+    public float lowHpMuffleCutoff = 0.15f;
     /** Pulsing red vignette overlay on the screen edges when health is low. */
     public boolean lowHpVignette = true;
     /** Flashes a red vignette overlay for ~1 second when taking damage. */
@@ -40,8 +46,8 @@ public class AZConfig {
     public float lowHpThresholdHearts = 3.0f;
 
     // ---- Volumes (0.0 - 1.0) ----
-    public float hungerVolume = 0.35f;
-    public float digestionVolume = 0.30f;
+    public float hungerVolume = 0.15f;
+    public float digestionVolume = 0.10f;
     public float lowHpVolume = 1.0f;
     public float anxietyVolume = 1.0f;
 
