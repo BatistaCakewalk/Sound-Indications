@@ -21,11 +21,18 @@ public class LowHpSoundInstance extends AbstractTickableSoundInstance {
         this.baseVolume = volume;
         this.fadeOutStep = fadeOutStep;
         this.fadeInStep = fadeInStep;
-        this.currentGain = startFaded ? 0.0f : 1.0f;
+        // Start at a small non-zero gain so the sound engine never drops the sound as zero volume,
+        // and override canStartSilent() so Minecraft explicitly queues it as a ticking sound.
+        this.currentGain = startFaded ? 0.02f : 1.0f;
         this.volume = this.baseVolume * this.currentGain;
         this.attenuation = Attenuation.NONE;
         this.relative = true;
         this.looping = false;
+    }
+
+    @Override
+    public boolean canStartSilent() {
+        return true;
     }
 
     public void startFadeOut() {

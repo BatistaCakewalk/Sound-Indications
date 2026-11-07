@@ -168,7 +168,7 @@ public class AZClient implements ClientModInitializer {
 
     /**
      * Handles low HP track playback.
-     * @return true if Minecraft's music should fade out (active when low HP with anxiety track enabled).
+     * @return true if Minecraft's background music should be faded out and kept silent.
      */
     private boolean handleLowHp(SoundManager sounds, AZConfig cfg, float health) {
         if (lowHpInstance != null && lowHpInstance.isStopped()) {
@@ -184,7 +184,7 @@ public class AZClient implements ClientModInitializer {
 
                 SoundEvent event = wantAnxiety ? ANXIETY : LOW_HP;
                 float volume = wantAnxiety ? cfg.anxietyVolume : cfg.lowHpVolume;
-                // Anxiety music fades in smoothly over 2s (startFaded = true) as Minecraft music fades out
+                // Anxiety music fades in smoothly over ~2s (startFaded = true) as Minecraft music fades out
                 float fadeIn = wantAnxiety ? ANXIETY_FADE_IN_STEP : 1.0f;
                 lowHpInstance = new LowHpSoundInstance(event, volume, SOUND_FADE_OUT_STEP, fadeIn, wantAnxiety);
                 sounds.play(lowHpInstance);
@@ -203,8 +203,8 @@ public class AZClient implements ClientModInitializer {
             }
         }
 
-        // Minecraft music fades out while low HP and anxiety song is enabled
-        return shouldPlay && wantAnxiety;
+        // Minecraft background music stays faded out while low HP anxiety is active OR while anxiety track is fading away
+        return (shouldPlay && wantAnxiety) || (lowHpInstance != null && lowHpIsAnxiety && !lowHpInstance.isStopped());
     }
 
     private void stopImmediately(SoundManager sounds) {
@@ -224,7 +224,7 @@ public class AZClient implements ClientModInitializer {
         float threshold = cfg.lowHpThresholdHearts * 2f;
         if (health <= threshold) {
             float missingFraction = Math.max(0.0f, threshold - health) / Math.max(1.0f, threshold);
-            // Prominent baseline strength (0.65) starting at threshold, rising to 1.0 at critical health
+            // Noticeable baseline strength (0.65) starting at threshold, rising to 1.0 at critical health
             float baseStrength = 0.65f + 0.35f * missingFraction;
             float target = baseStrength * cfg.lowHpVignetteIntensity;
             vignetteIntensity += (target - vignetteIntensity) * 0.15f;
@@ -319,7 +319,7 @@ public class AZClient implements ClientModInitializer {
 
     /**
      * Smoothly fades Minecraft's background music out when anxiety starts (~2s),
-     * and smoothly fades it back in once health recovers (~3s).
+     * and smoothly fades it back in once health recovers and anxiety song is finished (~3s).
      */
     private void fadeMusic(SoundManager sounds, boolean fadeOut) {
         float target = fadeOut ? 0.0f : 1.0f;
