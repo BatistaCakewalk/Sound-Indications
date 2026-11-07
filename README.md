@@ -9,7 +9,7 @@ IndicationSounds adds subtle audio and visual feedback to Minecraft, making play
 ## Features
 
 - **Hunger Sounds** — Audio feedback when your hunger level changes.
-- **Digestion Sounds** — Ambient digestive audio for added immersion.
+- **Digestion Sounds** — Ambient digestive audio for added immersion. *Why the fuck did I add it? No fucking idea-*
 - **Low Health Audio** — Sound indications when your health becomes dangerously low.
 - **Anxiety Music** — Optional atmospheric music that responds to dangerous situations, with smooth music fading.
 - **Underwater Audio** — Low-pass audio filtering while submerged.
@@ -65,6 +65,14 @@ The resulting mod JAR can be found in:
 ```text
 build/libs/
 ```
+
+## Credits
+
+- **Low-health sound and music assets** — The Pokémon Company / Nintendo.
+- **Digestion audio** — Garuda1982 on Freesound: https://freesound.org/people/Garuda1982/sounds/523824/
+- **Hunger sounds** — Robinhood76 on Freesound: https://freesound.org/people/Robinhood76/sounds/565164/
+
+Third-party asset attribution does not imply endorsement or grant redistribution rights. Check each asset's license and permissions before redistributing it.
 
 ## License
 
