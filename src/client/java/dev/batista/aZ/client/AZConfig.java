@@ -55,7 +55,7 @@ public class AZConfig {
     /** Hunger bars (1 bar = 2 food points). Sound plays at or below this. */
     public int hungerThresholdBars = 3;
     /** Digestion sounds are suppressed at or below this many hunger bars. */
-    public int digestionHungerThresholdBars = 5;
+    public int digestionHungerThresholdBars = 8;
     /** Hearts (1 heart = 2 health). Sound plays at or below this. */
     public float lowHpThresholdHearts = 3.0f;
 

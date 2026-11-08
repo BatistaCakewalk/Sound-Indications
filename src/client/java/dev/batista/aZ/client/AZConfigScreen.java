@@ -12,6 +12,7 @@ import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.gui.YACLScreen;
 import dev.isxander.yacl3.gui.utils.GuiUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -29,6 +30,7 @@ public final class AZConfigScreen {
     public static Screen create(Screen parent) {
         AZConfig defaults = new AZConfig();
         AZConfig cfg = AZConfig.get();
+        boolean directionalAudioEnabled = Minecraft.getInstance().options.directionalAudio().get();
         List<Option<?>> allOptions = new ArrayList<>();
 
         // Audio
@@ -46,9 +48,10 @@ public final class AZConfigScreen {
                 defaults.digestionWaitForRefill, () -> cfg.digestionWaitForRefill,
                 v -> cfg.digestionWaitForRefill = v);
         Option<Boolean> stomachPosition = toggle("Accurately place stomach sounds",
-                "Play hunger and digestion sounds from the player's abdomen. Turn this off to play them at the listener's ears.",
+                "Play hunger and digestion sounds from the player's abdomen. Requires Minecraft's Directional Audio setting.",
                 defaults.accuratelyPlaceStomachSounds, () -> cfg.accuratelyPlaceStomachSounds,
                 v -> cfg.accuratelyPlaceStomachSounds = v);
+        stomachPosition.setAvailable(directionalAudioEnabled);
         Option<Boolean> lowHealth = toggle("Low-health sound", "Play an audio indication when your health is low.",
                 defaults.lowHpEnabled, () -> cfg.lowHpEnabled, v -> cfg.lowHpEnabled = v);
         Option<Boolean> anxiety = toggle("Use anxiety music",
@@ -159,7 +162,7 @@ public final class AZConfigScreen {
                 defaults.hungerThresholdBars, 1, 10,
                 () -> cfg.hungerThresholdBars, v -> cfg.hungerThresholdBars = v);
         Option<Integer> digestionHungerThreshold = intField("Digestion hunger cutoff (bars)",
-                "Stop digestion sounds at or below this many hunger bars. 5 bars is half the hunger bar.",
+                "Stop digestion sounds at or below this many hunger bars. The default is 8 bars.",
                 defaults.digestionHungerThresholdBars, 1, 10,
                 () -> cfg.digestionHungerThresholdBars, v -> cfg.digestionHungerThresholdBars = v);
         Option<Float> lowHealthThreshold = floatField("Low-health threshold (hearts)",

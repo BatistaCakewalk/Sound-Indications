@@ -52,7 +52,6 @@ public class AZClient implements ClientModInitializer {
     private long tick = 0;
     private int hungerTimer = -1;
     private long digestionReadyAt = 0;
-    private float lastSaturation = -1f;
     private boolean digestionRefillGateInitialized = false;
     private boolean digestionAwaitingRefill = false;
     private boolean digestionWaitForRefillWasEnabled = false;
@@ -129,7 +128,6 @@ public class AZClient implements ClientModInitializer {
         } else {
             stopImmediately(sounds);
             hungerTimer = -1;
-            lastSaturation = -1f;
             vignetteIntensity = Math.max(0.0f, vignetteIntensity - 0.1f);
         }
 
@@ -161,7 +159,8 @@ public class AZClient implements ClientModInitializer {
         // Establish a fresh baseline when entering a world or enabling the refill gate.
         if (!digestionRefillGateInitialized
                 || (cfg.digestionWaitForRefill && !digestionWaitForRefillWasEnabled)) {
-            digestionAwaitingRefill = cfg.digestionWaitForRefill;
+            boolean alreadyFullyReplenished = foodLevel >= 20 && saturation >= 20.0f - 0.001f;
+            digestionAwaitingRefill = cfg.digestionWaitForRefill && !alreadyFullyReplenished;
             digestionJoinFoodLevel = foodLevel;
             digestionJoinSaturation = saturation;
             digestionRefillGateInitialized = true;
@@ -179,19 +178,18 @@ public class AZClient implements ClientModInitializer {
 
         boolean hungerAllowsDigestion = !cfg.digestionHungerCutoffEnabled
                 || foodLevel > cfg.digestionHungerThresholdBars * 2;
-        boolean saturationBurned = lastSaturation >= 0f && saturation < lastSaturation - 0.001f;
+        boolean saturationAvailable = saturation > 0.001f;
 
         if (cfg.digestionEnabled && !digestionAwaitingRefill
-                && hungerAllowsDigestion && saturationBurned && tick >= digestionReadyAt) {
+                && hungerAllowsDigestion && saturationAvailable && tick >= digestionReadyAt) {
             playStomachSound(sounds, player, DIGESTION, 1.0f, cfg.digestionVolume, cfg);
             digestionReadyAt = tick + Math.max(1, cfg.digestionCooldownSeconds) * 20L;
         }
-        lastSaturation = saturation;
     }
 
     private void playStomachSound(SoundManager sounds, LocalPlayer player, SoundEvent event,
                                   float pitch, float volume, AZConfig cfg) {
-        if (cfg.accuratelyPlaceStomachSounds) {
+        if (cfg.accuratelyPlaceStomachSounds && Minecraft.getInstance().options.directionalAudio().get()) {
             sounds.play(new StomachSoundInstance(player, event, volume, pitch));
         } else {
             sounds.play(SimpleSoundInstance.forUI(event, pitch, volume));
@@ -370,7 +368,7 @@ public class AZClient implements ClientModInitializer {
         stopImmediately(sounds);
         AZFilterManager.releaseAll(sounds);
         hungerTimer = -1;
-        lastSaturation = -1f;
+        digestionReadyAt = 0;
         digestionRefillGateInitialized = false;
         digestionAwaitingRefill = false;
         digestionWaitForRefillWasEnabled = false;
