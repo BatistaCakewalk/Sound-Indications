@@ -23,6 +23,12 @@ public class AZConfig {
     // ---- Toggles ----
     public boolean hungerEnabled = true;
     public boolean digestionEnabled = false;
+    /** Stop digestion sounds once hunger reaches the configured low-food threshold. */
+    public boolean digestionHungerCutoffEnabled = true;
+    /** Wait until the player eats after joining a world before allowing digestion sounds. */
+    public boolean digestionWaitForRefill = true;
+    /** Play stomach sounds from the player's abdomen instead of listener-centred audio. */
+    public boolean accuratelyPlaceStomachSounds = true;
     public boolean lowHpEnabled = true;
     /** Replace the low health sound with the anxiety song (also fades out Minecraft's music). */
     public boolean useAnxietySong = false;
@@ -48,6 +54,8 @@ public class AZConfig {
     // ---- Thresholds ----
     /** Hunger bars (1 bar = 2 food points). Sound plays at or below this. */
     public int hungerThresholdBars = 3;
+    /** Digestion sounds are suppressed at or below this many hunger bars. */
+    public int digestionHungerThresholdBars = 5;
     /** Hearts (1 heart = 2 health). Sound plays at or below this. */
     public float lowHpThresholdHearts = 3.0f;
 

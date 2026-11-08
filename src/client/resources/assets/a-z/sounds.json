@@ -1,4 +1,4 @@
-﻿{
+{
     "hunger":  {
                    "sounds":  [
                                   "a-z:stomach/hunger_1",
@@ -234,27 +234,6 @@
                                      "a-z:stomach/digestion/r1nkata_gurgle_07_pitch_m4",
                                      "a-z:stomach/digestion/r1nkata_gurgle_07_pitch_p2",
                                      "a-z:stomach/digestion/r1nkata_gurgle_07_pitch_p4",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_env_gentle",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_env_lingering",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_env_natural",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_env_snappy",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_env_swelling",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_eq2_bubbly_plus",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_eq2_crisp_plus",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_eq2_hollow_plus",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_eq2_muffled_plus",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_eq2_warm_plus",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_layer_double",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_layer_echo",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_layer_high_detail",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_layer_low_body",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_higher",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_lower",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_m2",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_m4",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_p2",
-                                     "a-z:stomach/digestion/r1nkata_gurgle_08_pitch_p4",
                                      "a-z:stomach/digestion/r1nkata_gurgle_09",
                                      "a-z:stomach/digestion/r1nkata_gurgle_09_env_gentle",
                                      "a-z:stomach/digestion/r1nkata_gurgle_09_env_lingering",

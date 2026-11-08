@@ -37,6 +37,18 @@ public final class AZConfigScreen {
         Option<Boolean> digestion = toggle("Digestion sounds",
                 "Play ambient digestive audio when your body burns saturation. (Why? Why not!)",
                 defaults.digestionEnabled, () -> cfg.digestionEnabled, v -> cfg.digestionEnabled = v);
+        Option<Boolean> digestionHungerCutoff = toggle("Stop digestion sounds at low hunger",
+                "Stop digestion sounds when the hunger bar reaches the configured cutoff or lower.",
+                defaults.digestionHungerCutoffEnabled, () -> cfg.digestionHungerCutoffEnabled,
+                v -> cfg.digestionHungerCutoffEnabled = v);
+        Option<Boolean> digestionWaitForRefill = toggle("Wait for refill after joining a world",
+                "Keep digestion sounds silent after joining until you eat and replenish hunger or saturation.",
+                defaults.digestionWaitForRefill, () -> cfg.digestionWaitForRefill,
+                v -> cfg.digestionWaitForRefill = v);
+        Option<Boolean> stomachPosition = toggle("Accurately place stomach sounds",
+                "Play hunger and digestion sounds from the player's abdomen. Turn this off to play them at the listener's ears.",
+                defaults.accuratelyPlaceStomachSounds, () -> cfg.accuratelyPlaceStomachSounds,
+                v -> cfg.accuratelyPlaceStomachSounds = v);
         Option<Boolean> lowHealth = toggle("Low-health sound", "Play an audio indication when your health is low.",
                 defaults.lowHpEnabled, () -> cfg.lowHpEnabled, v -> cfg.lowHpEnabled = v);
         Option<Boolean> anxiety = toggle("Use anxiety music",
@@ -55,12 +67,15 @@ public final class AZConfigScreen {
                 "Keep inventory clicks and other interface sounds crisp while audio muffling is active.",
                 defaults.keepUIUnmuffled, () -> cfg.keepUIUnmuffled, v -> cfg.keepUIUnmuffled = v);
 
-        List<Option<?>> audioOptions = List.of(hunger, digestion, lowHealth, anxiety, lowHealthMuffle,
+        List<Option<?>> audioOptions = List.of(hunger, digestion, digestionHungerCutoff,
+                digestionWaitForRefill, stomachPosition, lowHealth, anxiety, lowHealthMuffle,
                 underwaterMuffle, muffleMusic, keepUi);
         allOptions.addAll(audioOptions);
 
         bindAvailability(() -> lowHealthMuffle.pendingValue() || underwaterMuffle.pendingValue(),
                 List.of(muffleMusic, keepUi), lowHealthMuffle, underwaterMuffle);
+        bindAvailability(digestion::pendingValue,
+                List.of(digestionHungerCutoff, digestionWaitForRefill), digestion);
         bindAvailability(lowHealth::pendingValue, List.of(anxiety), lowHealth);
 
         ConfigCategory.Builder audioCategory = ConfigCategory.createBuilder()
@@ -68,6 +83,9 @@ public final class AZConfigScreen {
                 .option(LabelOption.create(Component.literal("\u2014 HUNGER & DIGESTION \u2014")))
                 .option(hunger)
                 .option(digestion)
+                .option(digestionHungerCutoff)
+                .option(digestionWaitForRefill)
+                .option(stomachPosition)
                 .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH AUDIO \u2014")))
                 .option(lowHealth)
                 .option(anxiety)
@@ -140,20 +158,28 @@ public final class AZConfigScreen {
                 "Play hunger sounds at or below this many hunger bars.",
                 defaults.hungerThresholdBars, 1, 10,
                 () -> cfg.hungerThresholdBars, v -> cfg.hungerThresholdBars = v);
+        Option<Integer> digestionHungerThreshold = intField("Digestion hunger cutoff (bars)",
+                "Stop digestion sounds at or below this many hunger bars. 5 bars is half the hunger bar.",
+                defaults.digestionHungerThresholdBars, 1, 10,
+                () -> cfg.digestionHungerThresholdBars, v -> cfg.digestionHungerThresholdBars = v);
         Option<Float> lowHealthThreshold = floatField("Low-health threshold (hearts)",
                 "Trigger low-health audio at or below this many hearts. Half-heart precision is supported.",
                 defaults.lowHpThresholdHearts, 0.5f, 10f,
                 () -> cfg.lowHpThresholdHearts, v -> cfg.lowHpThresholdHearts = v);
 
-        List<Option<?>> thresholdOptions = List.of(hungerThreshold, lowHealthThreshold);
+        List<Option<?>> thresholdOptions = List.of(hungerThreshold, digestionHungerThreshold, lowHealthThreshold);
         allOptions.addAll(thresholdOptions);
         bindAvailability(hunger::pendingValue, List.of(hungerThreshold), hunger);
+        bindAvailability(() -> digestion.pendingValue() && digestionHungerCutoff.pendingValue(),
+                List.of(digestionHungerThreshold), digestion, digestionHungerCutoff);
         bindAvailability(lowHealth::pendingValue, List.of(lowHealthThreshold), lowHealth);
 
         ConfigCategory.Builder thresholdsCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Triggers & Thresholds"))
                 .option(LabelOption.create(Component.literal("\u2014 HUNGER \u2014")))
                 .option(hungerThreshold)
+                .option(LabelOption.create(Component.literal("\u2014 DIGESTION \u2014")))
+                .option(digestionHungerThreshold)
                 .option(LabelOption.create(Component.literal("\u2014 HEALTH \u2014")))
                 .option(lowHealthThreshold);
         addCategoryReset(thresholdsCategory, thresholdOptions);

@@ -30,8 +30,6 @@ public class AZClient implements ClientModInitializer {
     private static final int LOW_HP_LENGTH_TICKS = 12001;
     /** anxiety.ogg is ~930s long. Restart it after this if still low (ticks). */
     private static final int ANXIETY_LENGTH_TICKS = 18603;
-    /** Vanilla drains saturation in steps of at most 1.0. Bigger drops are not natural burning. */
-    private static final float MAX_NATURAL_SATURATION_DROP = 1.0001f;
 
     /** Minecraft background music fade speed: ~2s fade out (40 ticks), ~3s fade in (60 ticks). */
     private static final float MUSIC_FADE_OUT_STEP = 1f / 40f;
@@ -55,7 +53,11 @@ public class AZClient implements ClientModInitializer {
     private int hungerTimer = -1;
     private long digestionReadyAt = 0;
     private float lastSaturation = -1f;
-    private int lastFoodLevel = -1;
+    private boolean digestionRefillGateInitialized = false;
+    private boolean digestionAwaitingRefill = false;
+    private boolean digestionWaitForRefillWasEnabled = false;
+    private int digestionJoinFoodLevel = -1;
+    private float digestionJoinSaturation = -1f;
     private float lastHealth = -1f;
 
     private LowHpSoundInstance lowHpInstance = null;
@@ -120,15 +122,14 @@ public class AZClient implements ClientModInitializer {
         boolean canHaveEffects = player.isAlive() && !player.isCreative() && !player.isSpectator();
         if (canHaveEffects) {
             FoodData food = player.getFoodData();
-            handleHunger(sounds, cfg, food.getFoodLevel());
-            handleDigestion(sounds, cfg, food.getFoodLevel(), food.getSaturationLevel());
+            handleHunger(sounds, player, cfg, food.getFoodLevel());
+            handleDigestion(sounds, player, cfg, food.getSaturationLevel(), food.getFoodLevel());
             wantFadeOutMusic = handleLowHp(sounds, cfg, currentHealth);
             updateVignette(currentHealth, cfg);
         } else {
             stopImmediately(sounds);
             hungerTimer = -1;
             lastSaturation = -1f;
-            lastFoodLevel = -1;
             vignetteIntensity = Math.max(0.0f, vignetteIntensity - 0.1f);
         }
 
@@ -137,7 +138,7 @@ public class AZClient implements ClientModInitializer {
         fadeMusic(sounds, wantFadeOutMusic);
     }
 
-    private void handleHunger(SoundManager sounds, AZConfig cfg, int foodLevel) {
+    private void handleHunger(SoundManager sounds, LocalPlayer player, AZConfig cfg, int foodLevel) {
         // 1 bar = 2 food points
         if (!cfg.hungerEnabled || foodLevel > cfg.hungerThresholdBars * 2) {
             hungerTimer = -1;
@@ -148,25 +149,53 @@ public class AZClient implements ClientModInitializer {
         }
         if (--hungerTimer <= 0) {
             float pitch = 0.9f + random.nextFloat() * 0.2f;
-            sounds.play(SimpleSoundInstance.forUI(HUNGER, pitch, cfg.hungerVolume));
+            playStomachSound(sounds, player, HUNGER, pitch, cfg.hungerVolume, cfg);
             int minGap = Math.max(1, cfg.hungerMinGapSeconds) * 20;
             int maxGap = Math.max(minGap, cfg.hungerMaxGapSeconds * 20);
             hungerTimer = minGap + random.nextInt(maxGap - minGap + 1);
         }
     }
 
-    private void handleDigestion(SoundManager sounds, AZConfig cfg, int foodLevel, float saturation) {
-        boolean saturationBurned = lastSaturation >= 0f
-                && saturation < lastSaturation
-                && lastSaturation - saturation <= MAX_NATURAL_SATURATION_DROP;
-        boolean hungerBarDropped = lastFoodLevel >= 0 && foodLevel < lastFoodLevel;
+    private void handleDigestion(SoundManager sounds, LocalPlayer player, AZConfig cfg,
+                                 float saturation, int foodLevel) {
+        // Establish a fresh baseline when entering a world or enabling the refill gate.
+        if (!digestionRefillGateInitialized
+                || (cfg.digestionWaitForRefill && !digestionWaitForRefillWasEnabled)) {
+            digestionAwaitingRefill = cfg.digestionWaitForRefill;
+            digestionJoinFoodLevel = foodLevel;
+            digestionJoinSaturation = saturation;
+            digestionRefillGateInitialized = true;
+        }
 
-        if (cfg.digestionEnabled && saturationBurned && !hungerBarDropped && tick >= digestionReadyAt) {
-            sounds.play(SimpleSoundInstance.forUI(DIGESTION, 1.0f, cfg.digestionVolume));
+        if (!cfg.digestionWaitForRefill) {
+            digestionAwaitingRefill = false;
+        } else if (digestionAwaitingRefill
+                && (foodLevel > digestionJoinFoodLevel
+                || saturation > digestionJoinSaturation + 0.001f)) {
+            // The player has eaten and replenished at least one hunger/saturation value.
+            digestionAwaitingRefill = false;
+        }
+        digestionWaitForRefillWasEnabled = cfg.digestionWaitForRefill;
+
+        boolean hungerAllowsDigestion = !cfg.digestionHungerCutoffEnabled
+                || foodLevel > cfg.digestionHungerThresholdBars * 2;
+        boolean saturationBurned = lastSaturation >= 0f && saturation < lastSaturation - 0.001f;
+
+        if (cfg.digestionEnabled && !digestionAwaitingRefill
+                && hungerAllowsDigestion && saturationBurned && tick >= digestionReadyAt) {
+            playStomachSound(sounds, player, DIGESTION, 1.0f, cfg.digestionVolume, cfg);
             digestionReadyAt = tick + Math.max(1, cfg.digestionCooldownSeconds) * 20L;
         }
         lastSaturation = saturation;
-        lastFoodLevel = foodLevel;
+    }
+
+    private void playStomachSound(SoundManager sounds, LocalPlayer player, SoundEvent event,
+                                  float pitch, float volume, AZConfig cfg) {
+        if (cfg.accuratelyPlaceStomachSounds) {
+            sounds.play(new StomachSoundInstance(player, event, volume, pitch));
+        } else {
+            sounds.play(SimpleSoundInstance.forUI(event, pitch, volume));
+        }
     }
 
     /**
@@ -342,7 +371,11 @@ public class AZClient implements ClientModInitializer {
         AZFilterManager.releaseAll(sounds);
         hungerTimer = -1;
         lastSaturation = -1f;
-        lastFoodLevel = -1;
+        digestionRefillGateInitialized = false;
+        digestionAwaitingRefill = false;
+        digestionWaitForRefillWasEnabled = false;
+        digestionJoinFoodLevel = -1;
+        digestionJoinSaturation = -1f;
         lastHealth = -1f;
         vignetteIntensity = 0f;
         prevVignetteIntensity = 0f;
