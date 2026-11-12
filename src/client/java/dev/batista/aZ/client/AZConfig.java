@@ -23,6 +23,12 @@ public class AZConfig {
     // ---- Toggles ----
     public boolean hungerEnabled = true;
     public boolean digestionEnabled = false;
+    /** Stop digestion sounds once hunger reaches the configured low-food threshold. */
+    public boolean digestionHungerCutoffEnabled = true;
+    /** Wait until the player eats after joining a world before allowing digestion sounds. */
+    public boolean digestionWaitForRefill = true;
+    /** Play stomach sounds from the player's abdomen instead of listener-centred audio. */
+    public boolean accuratelyPlaceStomachSounds = true;
     public boolean lowHpEnabled = true;
     /** Replace the low health sound with the anxiety song (also fades out Minecraft's music). */
     public boolean useAnxietySong = false;
@@ -34,6 +40,10 @@ public class AZConfig {
     public boolean muffleMusic = true;
     /** Keep UI sounds (inventory clicks, etc.) unmuffled while health is low or underwater. */
     public boolean keepUIUnmuffled = true;
+    /** Play cave ambience while exploring enclosed underground areas in the Overworld. */
+    public boolean caveAmbienceEnabled = true;
+    /** Allow occasional randomized cave sound events. */
+    public boolean caveEventsEnabled = true;
     /** Lowest high-frequency gain cutoff for low-pass filter at critical health (0.05 - 0.50). */
     public float lowHpMuffleCutoff = 0.5f;
     /** Lowest high-frequency gain cutoff for low-pass filter when submerged underwater (0.05 - 0.50). */
@@ -48,6 +58,8 @@ public class AZConfig {
     // ---- Thresholds ----
     /** Hunger bars (1 bar = 2 food points). Sound plays at or below this. */
     public int hungerThresholdBars = 3;
+    /** Digestion sounds are suppressed at or below this many hunger bars. */
+    public int digestionHungerThresholdBars = 8;
     /** Hearts (1 heart = 2 health). Sound plays at or below this. */
     public float lowHpThresholdHearts = 3.0f;
 
@@ -56,6 +68,8 @@ public class AZConfig {
     public float digestionVolume = 0.10f;
     public float lowHpVolume = 1.0f;
     public float anxietyVolume = 1.0f;
+    public float caveAmbienceVolume = 0.16f;
+    public float caveEventsVolume = 0.22f;
 
     // ---- Timing (seconds) ----
     public int hungerMinGapSeconds = 5;

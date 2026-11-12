@@ -30,8 +30,6 @@ public class AZClient implements ClientModInitializer {
     private static final int LOW_HP_LENGTH_TICKS = 12001;
     /** anxiety.ogg is ~930s long. Restart it after this if still low (ticks). */
     private static final int ANXIETY_LENGTH_TICKS = 18603;
-    /** Vanilla drains saturation in steps of at most 1.0. Bigger drops are not natural burning. */
-    private static final float MAX_NATURAL_SATURATION_DROP = 1.0001f;
 
     /** Minecraft background music fade speed: ~2s fade out (40 ticks), ~3s fade in (60 ticks). */
     private static final float MUSIC_FADE_OUT_STEP = 1f / 40f;
@@ -50,18 +48,23 @@ public class AZClient implements ClientModInitializer {
     private static final SoundEvent ANXIETY = event("anxiety");
 
     private final RandomSource random = RandomSource.create();
+    private final CaveAmbienceController caveAmbience = new CaveAmbienceController();
 
     private long tick = 0;
     private int hungerTimer = -1;
     private long digestionReadyAt = 0;
-    private float lastSaturation = -1f;
-    private int lastFoodLevel = -1;
+    private boolean digestionRefillGateInitialized = false;
+    private boolean digestionAwaitingRefill = false;
+    private boolean digestionWaitForRefillWasEnabled = false;
+    private int digestionJoinFoodLevel = -1;
+    private float digestionJoinSaturation = -1f;
     private float lastHealth = -1f;
 
     private LowHpSoundInstance lowHpInstance = null;
     private boolean lowHpIsAnxiety = false;
     private long lowHpRestartAt = 0;
     private float musicGain = 1f;
+    private float lastAppliedMusicVolume = -1f;
 
     // Low HP pulsing vignette
     private float vignetteIntensity = 0f;
@@ -120,24 +123,23 @@ public class AZClient implements ClientModInitializer {
         boolean canHaveEffects = player.isAlive() && !player.isCreative() && !player.isSpectator();
         if (canHaveEffects) {
             FoodData food = player.getFoodData();
-            handleHunger(sounds, cfg, food.getFoodLevel());
-            handleDigestion(sounds, cfg, food.getFoodLevel(), food.getSaturationLevel());
+            handleHunger(sounds, player, cfg, food.getFoodLevel());
+            handleDigestion(sounds, player, cfg, food.getSaturationLevel(), food.getFoodLevel());
             wantFadeOutMusic = handleLowHp(sounds, cfg, currentHealth);
             updateVignette(currentHealth, cfg);
         } else {
             stopImmediately(sounds);
             hungerTimer = -1;
-            lastSaturation = -1f;
-            lastFoodLevel = -1;
             vignetteIntensity = Math.max(0.0f, vignetteIntensity - 0.1f);
         }
 
         boolean isUnderwater = player.isUnderWater() && !player.isSpectator();
         AZFilterManager.tick(sounds, cfg, currentHealth, canHaveEffects, isUnderwater);
-        fadeMusic(sounds, wantFadeOutMusic);
+        caveAmbience.tick(sounds, player, cfg);
+        fadeMusic(sounds, wantFadeOutMusic, caveAmbience.shouldDuckMusic());
     }
 
-    private void handleHunger(SoundManager sounds, AZConfig cfg, int foodLevel) {
+    private void handleHunger(SoundManager sounds, LocalPlayer player, AZConfig cfg, int foodLevel) {
         // 1 bar = 2 food points
         if (!cfg.hungerEnabled || foodLevel > cfg.hungerThresholdBars * 2) {
             hungerTimer = -1;
@@ -148,25 +150,53 @@ public class AZClient implements ClientModInitializer {
         }
         if (--hungerTimer <= 0) {
             float pitch = 0.9f + random.nextFloat() * 0.2f;
-            sounds.play(SimpleSoundInstance.forUI(HUNGER, pitch, cfg.hungerVolume));
+            playStomachSound(sounds, player, HUNGER, pitch, cfg.hungerVolume, cfg);
             int minGap = Math.max(1, cfg.hungerMinGapSeconds) * 20;
             int maxGap = Math.max(minGap, cfg.hungerMaxGapSeconds * 20);
             hungerTimer = minGap + random.nextInt(maxGap - minGap + 1);
         }
     }
 
-    private void handleDigestion(SoundManager sounds, AZConfig cfg, int foodLevel, float saturation) {
-        boolean saturationBurned = lastSaturation >= 0f
-                && saturation < lastSaturation
-                && lastSaturation - saturation <= MAX_NATURAL_SATURATION_DROP;
-        boolean hungerBarDropped = lastFoodLevel >= 0 && foodLevel < lastFoodLevel;
+    private void handleDigestion(SoundManager sounds, LocalPlayer player, AZConfig cfg,
+                                 float saturation, int foodLevel) {
+        // Establish a fresh baseline when entering a world or enabling the refill gate.
+        if (!digestionRefillGateInitialized
+                || (cfg.digestionWaitForRefill && !digestionWaitForRefillWasEnabled)) {
+            boolean alreadyFullyReplenished = foodLevel >= 20 && saturation >= 20.0f - 0.001f;
+            digestionAwaitingRefill = cfg.digestionWaitForRefill && !alreadyFullyReplenished;
+            digestionJoinFoodLevel = foodLevel;
+            digestionJoinSaturation = saturation;
+            digestionRefillGateInitialized = true;
+        }
 
-        if (cfg.digestionEnabled && saturationBurned && !hungerBarDropped && tick >= digestionReadyAt) {
-            sounds.play(SimpleSoundInstance.forUI(DIGESTION, 1.0f, cfg.digestionVolume));
+        if (!cfg.digestionWaitForRefill) {
+            digestionAwaitingRefill = false;
+        } else if (digestionAwaitingRefill
+                && (foodLevel > digestionJoinFoodLevel
+                || saturation > digestionJoinSaturation + 0.001f)) {
+            // The player has eaten and replenished at least one hunger/saturation value.
+            digestionAwaitingRefill = false;
+        }
+        digestionWaitForRefillWasEnabled = cfg.digestionWaitForRefill;
+
+        boolean hungerAllowsDigestion = !cfg.digestionHungerCutoffEnabled
+                || foodLevel > cfg.digestionHungerThresholdBars * 2;
+        boolean saturationAvailable = saturation > 0.001f;
+
+        if (cfg.digestionEnabled && !digestionAwaitingRefill
+                && hungerAllowsDigestion && saturationAvailable && tick >= digestionReadyAt) {
+            playStomachSound(sounds, player, DIGESTION, 1.0f, cfg.digestionVolume, cfg);
             digestionReadyAt = tick + Math.max(1, cfg.digestionCooldownSeconds) * 20L;
         }
-        lastSaturation = saturation;
-        lastFoodLevel = foodLevel;
+    }
+
+    private void playStomachSound(SoundManager sounds, LocalPlayer player, SoundEvent event,
+                                  float pitch, float volume, AZConfig cfg) {
+        if (cfg.accuratelyPlaceStomachSounds && Minecraft.getInstance().options.directionalAudio().get()) {
+            sounds.play(new StomachSoundInstance(player, event, volume, pitch));
+        } else {
+            sounds.play(SimpleSoundInstance.forUI(event, pitch, volume));
+        }
     }
 
     /**
@@ -321,37 +351,51 @@ public class AZClient implements ClientModInitializer {
     }
 
     /**
-     * Smoothly fades Minecraft's background music out when anxiety starts (~2s),
-     * and smoothly fades it back in once health recovers and anxiety song is finished (~3s).
+     * Ducks vanilla music in caves (~2s fade to 25%) and restores it on exit (~3s).
+     * The anxiety track retains priority and fully suppresses vanilla music.
      */
-    private void fadeMusic(SoundManager sounds, boolean fadeOut) {
-        float target = fadeOut ? 0.0f : 1.0f;
-        if (musicGain == target) {
-            return;
+    private void fadeMusic(SoundManager sounds, boolean fadeOut, boolean caveDuck) {
+        float target = fadeOut ? 0.0f : caveDuck ? 0.25f : 1.0f;
+        boolean decreasing = target < musicGain;
+        float step = decreasing ? MUSIC_FADE_OUT_STEP : MUSIC_FADE_IN_STEP;
+        if (musicGain != target) {
+            musicGain = decreasing
+                    ? Math.max(target, musicGain - step)
+                    : Math.min(target, musicGain + step);
         }
-        float step = fadeOut ? MUSIC_FADE_OUT_STEP : MUSIC_FADE_IN_STEP;
-        musicGain = fadeOut
-                ? Math.max(target, musicGain - step)
-                : Math.min(target, musicGain + step);
-        sounds.updateCategoryVolume(SoundSource.MUSIC, musicGain);
+
+        // Keep the player's configured Music slider as the baseline; musicGain is only a temporary duck.
+        float configuredVolume = Minecraft.getInstance().options
+                .getSoundSourceOptionInstance(SoundSource.MUSIC).get().floatValue();
+        float appliedVolume = configuredVolume * musicGain;
+        if (Math.abs(appliedVolume - lastAppliedMusicVolume) > 0.001f) {
+            sounds.updateCategoryVolume(SoundSource.MUSIC, appliedVolume);
+            lastAppliedMusicVolume = appliedVolume;
+        }
     }
 
     /** Called when there is no player (title screen, leaving a world). Restores everything instantly. */
     private void resetAll(SoundManager sounds) {
         stopImmediately(sounds);
+        caveAmbience.reset(sounds);
         AZFilterManager.releaseAll(sounds);
         hungerTimer = -1;
-        lastSaturation = -1f;
-        lastFoodLevel = -1;
+        digestionReadyAt = 0;
+        digestionRefillGateInitialized = false;
+        digestionAwaitingRefill = false;
+        digestionWaitForRefillWasEnabled = false;
+        digestionJoinFoodLevel = -1;
+        digestionJoinSaturation = -1f;
         lastHealth = -1f;
         vignetteIntensity = 0f;
         prevVignetteIntensity = 0f;
         damageFlashTicks = 0;
         damageFlashIntensity = 0f;
         prevFlashIntensity = 0f;
-        if (musicGain != 1f) {
-            musicGain = 1f;
-            sounds.updateCategoryVolume(SoundSource.MUSIC, 1f);
-        }
+        musicGain = 1f;
+        float configuredMusicVolume = Minecraft.getInstance().options
+                .getSoundSourceOptionInstance(SoundSource.MUSIC).get().floatValue();
+        sounds.updateCategoryVolume(SoundSource.MUSIC, configuredMusicVolume);
+        lastAppliedMusicVolume = configuredMusicVolume;
     }
 }

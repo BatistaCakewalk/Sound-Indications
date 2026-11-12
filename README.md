@@ -8,13 +8,14 @@ IndicationSounds adds subtle audio and visual feedback to Minecraft, making play
 
 ## Features
 
-- **Hunger Sounds** — Audio feedback when your hunger level changes.
-- **Digestion Sounds** — Ambient digestive audio for added immersion.
-- **Low Health Audio** — Sound indications when your health becomes dangerously low.
-- **Anxiety Music** — Optional atmospheric music that responds to dangerous situations, with smooth music fading.
-- **Underwater Audio** — Low-pass audio filtering while submerged.
-- **Low Health Audio Filtering** — Additional muffling to reinforce the feeling of being critically injured.
-- **Visual Feedback** — Low-health vignette and damage flash effects.
+- **Hunger Sounds** â€” Audio feedback when your hunger level changes.
+- **Digestion Sounds** â€” Ambient digestive audio for added immersion. *Why the fuck did I add it? No fucking idea-*
+- **Low Health Audio** â€” Sound indications when your health becomes dangerously low.
+- **Anxiety Music** â€” Optional atmospheric music that responds to dangerous situations, with smooth music fading.
+- **Underwater Audio** â€” Low-pass audio filtering while submerged.
+- **Cave Ambience** — Quiet/loud ambience beds, randomized cave events and water droplets, vanilla music ducking, and underwater/low-health muffling.
+- **Low Health Audio Filtering** â€” Additional muffling to reinforce the feeling of being critically injured.
+- **Visual Feedback** â€” Low-health vignette and damage flash effects.
 
 ## Configuration
 
@@ -29,6 +30,12 @@ You can customize supported sound and visual effects without manually editing co
 - Fabric API
 - Mod Menu (for the configuration screen)
 - YetAnotherConfigLib (YACL)
+
+## Recommended Mods
+
+- **Sound Physics Remastered** — recommended* for enhanced cave acoustics; adds realistic sound attenuation, reverberation and absorption.
+
+*Optional recommendation only. Sound Physics Remastered is not required; IndicationSounds works without it.
 
 ## Installation
 
@@ -65,6 +72,18 @@ The resulting mod JAR can be found in:
 ```text
 build/libs/
 ```
+
+## Credits
+
+- **Low-health sound and music assets** â€” The PokÃ©mon Company / Nintendo.
+- **Digestion audio** â€” Garuda1982 on Freesound: https://freesound.org/people/Garuda1982/sounds/523824/
+- **Hunger sounds** â€” Robinhood76 on Freesound: https://freesound.org/people/Robinhood76/sounds/565164/
+
+Third-party asset attribution does not imply endorsement or grant redistribution rights. Check each asset's license and permissions before redistributing it.
+
+## Additional Audio Credits
+
+The expanded stomach sound library and per-file source/licence records are documented in [SOUND-CREDITS.md](SOUND-CREDITS.md) and [SOUND-ATTRIBUTION.csv](SOUND-ATTRIBUTION.csv).
 
 ## License
 
