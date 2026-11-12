@@ -48,6 +48,7 @@ public class AZClient implements ClientModInitializer {
     private static final SoundEvent ANXIETY = event("anxiety");
 
     private final RandomSource random = RandomSource.create();
+    private final CaveAmbienceController caveAmbience = new CaveAmbienceController();
 
     private long tick = 0;
     private int hungerTimer = -1;
@@ -63,6 +64,7 @@ public class AZClient implements ClientModInitializer {
     private boolean lowHpIsAnxiety = false;
     private long lowHpRestartAt = 0;
     private float musicGain = 1f;
+    private float lastAppliedMusicVolume = -1f;
 
     // Low HP pulsing vignette
     private float vignetteIntensity = 0f;
@@ -133,7 +135,8 @@ public class AZClient implements ClientModInitializer {
 
         boolean isUnderwater = player.isUnderWater() && !player.isSpectator();
         AZFilterManager.tick(sounds, cfg, currentHealth, canHaveEffects, isUnderwater);
-        fadeMusic(sounds, wantFadeOutMusic);
+        caveAmbience.tick(sounds, player, cfg);
+        fadeMusic(sounds, wantFadeOutMusic, caveAmbience.shouldDuckMusic());
     }
 
     private void handleHunger(SoundManager sounds, LocalPlayer player, AZConfig cfg, int foodLevel) {
@@ -348,24 +351,33 @@ public class AZClient implements ClientModInitializer {
     }
 
     /**
-     * Smoothly fades Minecraft's background music out when anxiety starts (~2s),
-     * and smoothly fades it back in once health recovers and anxiety song is finished (~3s).
+     * Ducks vanilla music in caves (~2s fade to 25%) and restores it on exit (~3s).
+     * The anxiety track retains priority and fully suppresses vanilla music.
      */
-    private void fadeMusic(SoundManager sounds, boolean fadeOut) {
-        float target = fadeOut ? 0.0f : 1.0f;
-        if (musicGain == target) {
-            return;
+    private void fadeMusic(SoundManager sounds, boolean fadeOut, boolean caveDuck) {
+        float target = fadeOut ? 0.0f : caveDuck ? 0.25f : 1.0f;
+        boolean decreasing = target < musicGain;
+        float step = decreasing ? MUSIC_FADE_OUT_STEP : MUSIC_FADE_IN_STEP;
+        if (musicGain != target) {
+            musicGain = decreasing
+                    ? Math.max(target, musicGain - step)
+                    : Math.min(target, musicGain + step);
         }
-        float step = fadeOut ? MUSIC_FADE_OUT_STEP : MUSIC_FADE_IN_STEP;
-        musicGain = fadeOut
-                ? Math.max(target, musicGain - step)
-                : Math.min(target, musicGain + step);
-        sounds.updateCategoryVolume(SoundSource.MUSIC, musicGain);
+
+        // Keep the player's configured Music slider as the baseline; musicGain is only a temporary duck.
+        float configuredVolume = Minecraft.getInstance().options
+                .getSoundSourceOptionInstance(SoundSource.MUSIC).get().floatValue();
+        float appliedVolume = configuredVolume * musicGain;
+        if (Math.abs(appliedVolume - lastAppliedMusicVolume) > 0.001f) {
+            sounds.updateCategoryVolume(SoundSource.MUSIC, appliedVolume);
+            lastAppliedMusicVolume = appliedVolume;
+        }
     }
 
     /** Called when there is no player (title screen, leaving a world). Restores everything instantly. */
     private void resetAll(SoundManager sounds) {
         stopImmediately(sounds);
+        caveAmbience.reset(sounds);
         AZFilterManager.releaseAll(sounds);
         hungerTimer = -1;
         digestionReadyAt = 0;
@@ -380,9 +392,10 @@ public class AZClient implements ClientModInitializer {
         damageFlashTicks = 0;
         damageFlashIntensity = 0f;
         prevFlashIntensity = 0f;
-        if (musicGain != 1f) {
-            musicGain = 1f;
-            sounds.updateCategoryVolume(SoundSource.MUSIC, 1f);
-        }
+        musicGain = 1f;
+        float configuredMusicVolume = Minecraft.getInstance().options
+                .getSoundSourceOptionInstance(SoundSource.MUSIC).get().floatValue();
+        sounds.updateCategoryVolume(SoundSource.MUSIC, configuredMusicVolume);
+        lastAppliedMusicVolume = configuredMusicVolume;
     }
 }

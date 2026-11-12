@@ -44,6 +44,7 @@
   },
   "suggests": {
     "modmenu": "*",
-    "yet_another_config_lib_v3": "*"
+    "yet_another_config_lib_v3": "*",
+    "sound_physics_remastered": "*"
   }
 }

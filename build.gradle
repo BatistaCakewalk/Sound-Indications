@@ -71,6 +71,19 @@ processResources {
                 "minecraft_version": project.minecraft_version,
                 "loader_version": project.loader_version
     }
+
+    // Keep archival cave source recordings out of the distributable JAR.
+    exclude { details ->
+        details.path.startsWith("assets/a-z/sounds/enviroment/caves/") &&
+                !details.path.startsWith("assets/a-z/sounds/enviroment/caves/ogg/")
+    }
+}
+
+tasks.named("processClientResources") {
+    // Keep archival WAV/MP3 source recordings out of the distributable JAR.
+    exclude "assets/a-z/sounds/enviroment/caves/**/*.wav"
+    exclude "assets/a-z/sounds/enviroment/caves/**/*.mp3"
+    exclude "assets/a-z/sounds/enviroment/caves/*.ogg"
 }
 
 def targetJavaVersion = 25

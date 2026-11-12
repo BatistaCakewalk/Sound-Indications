@@ -314,5 +314,55 @@
                                        "stream":  true
                                    }
                                ]
-                }
+                },
+    "cave_ambience_quiet": {
+        "sounds": [
+            {
+                "name": "a-z:enviroment/caves/ogg/quiet_cave_ambience",
+                "stream": true
+            }
+        ]
+    },
+    "cave_ambience_loud": {
+        "sounds": [
+            {
+                "name": "a-z:enviroment/caves/ogg/loud_cave_ambient",
+                "stream": true
+            }
+        ]
+    },
+    "cave_short_ambience": {
+        "sounds": [
+            { "name": "a-z:enviroment/caves/ogg/short_cave_ambience", "stream": true }
+        ]
+    },
+    "cave_tribal": {
+        "sounds": [
+            { "name": "a-z:enviroment/caves/ogg/cave_tribal_ambient", "stream": true }
+        ]
+    },
+    "cave_horror": {
+        "sounds": [
+            { "name": "a-z:enviroment/caves/ogg/horror_cave_ambience", "stream": true }
+        ]
+    },
+    "cave_water_drops": {
+        "sounds": [
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_01",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_01_high",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_01_low",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_02",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_02_high",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_02_low",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_03",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_03_high",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_03_low",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_04",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_04_high",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_04_low",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_05",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_05_high",
+            "a-z:enviroment/caves/ogg/water_drops/water_drop_05_low"
+        ]
+    }
 }

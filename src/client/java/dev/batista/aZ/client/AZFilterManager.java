@@ -101,6 +101,10 @@ public final class AZFilterManager {
         if (sound instanceof LowHpSoundInstance) {
             return true;
         }
+        // Cave ambience and events should respond to underwater and low-health filtering.
+        if (sound instanceof CaveAmbienceSoundInstance || sound instanceof CaveEventSoundInstance) {
+            return false;
+        }
         // Stomach hunger growls and digestion sounds from IndicationSounds
         if (sound.getIdentifier() != null && "a-z".equals(sound.getIdentifier().getNamespace())) {
             return true;

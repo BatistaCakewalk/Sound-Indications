@@ -52,6 +52,12 @@ public final class AZConfigScreen {
                 defaults.accuratelyPlaceStomachSounds, () -> cfg.accuratelyPlaceStomachSounds,
                 v -> cfg.accuratelyPlaceStomachSounds = v);
         stomachPosition.setAvailable(directionalAudioEnabled);
+        Option<Boolean> caveAmbience = toggle("Cave ambience",
+                "Play quiet or loud ambient beds in enclosed, low-light Overworld caves.",
+                defaults.caveAmbienceEnabled, () -> cfg.caveAmbienceEnabled, v -> cfg.caveAmbienceEnabled = v);
+        Option<Boolean> caveEvents = toggle("Random cave sounds",
+                "Occasionally play short ambience, distant tribal or horror sounds, and water drops while in caves.",
+                defaults.caveEventsEnabled, () -> cfg.caveEventsEnabled, v -> cfg.caveEventsEnabled = v);
         Option<Boolean> lowHealth = toggle("Low-health sound", "Play an audio indication when your health is low.",
                 defaults.lowHpEnabled, () -> cfg.lowHpEnabled, v -> cfg.lowHpEnabled = v);
         Option<Boolean> anxiety = toggle("Use anxiety music",
@@ -71,8 +77,8 @@ public final class AZConfigScreen {
                 defaults.keepUIUnmuffled, () -> cfg.keepUIUnmuffled, v -> cfg.keepUIUnmuffled = v);
 
         List<Option<?>> audioOptions = List.of(hunger, digestion, digestionHungerCutoff,
-                digestionWaitForRefill, stomachPosition, lowHealth, anxiety, lowHealthMuffle,
-                underwaterMuffle, muffleMusic, keepUi);
+                digestionWaitForRefill, stomachPosition, caveAmbience, caveEvents,
+                lowHealth, anxiety, lowHealthMuffle, underwaterMuffle, muffleMusic, keepUi);
         allOptions.addAll(audioOptions);
 
         bindAvailability(() -> lowHealthMuffle.pendingValue() || underwaterMuffle.pendingValue(),
@@ -89,6 +95,9 @@ public final class AZConfigScreen {
                 .option(digestionHungerCutoff)
                 .option(digestionWaitForRefill)
                 .option(stomachPosition)
+                .option(LabelOption.create(Component.literal("\u2014 CAVE ENVIRONMENT \u2014")))
+                .option(caveAmbience)
+                .option(caveEvents)
                 .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH AUDIO \u2014")))
                 .option(lowHealth)
                 .option(anxiety)
@@ -112,13 +121,24 @@ public final class AZConfigScreen {
         Option<Float> anxietyVolume = floatSlider("Anxiety music volume", "Volume of the anxiety song.",
                 defaults.anxietyVolume, 0f, 1f, 0.01f, true,
                 () -> cfg.anxietyVolume, v -> cfg.anxietyVolume = v);
+        Option<Float> caveAmbienceVolume = floatSlider("Cave ambience volume",
+                "Volume of the continuous cave ambience beds.",
+                defaults.caveAmbienceVolume, 0f, 1f, 0.01f, true,
+                () -> cfg.caveAmbienceVolume, v -> cfg.caveAmbienceVolume = v);
+        Option<Float> caveEventsVolume = floatSlider("Cave event volume",
+                "Volume of occasional cave sounds.",
+                defaults.caveEventsVolume, 0f, 1f, 0.01f, true,
+                () -> cfg.caveEventsVolume, v -> cfg.caveEventsVolume = v);
 
-        List<Option<?>> volumeOptions = List.of(hungerVolume, digestionVolume, lowHealthVolume, anxietyVolume);
+        List<Option<?>> volumeOptions = List.of(hungerVolume, digestionVolume, lowHealthVolume,
+                anxietyVolume, caveAmbienceVolume, caveEventsVolume);
         allOptions.addAll(volumeOptions);
         bindAvailability(hunger::pendingValue, List.of(hungerVolume), hunger);
         bindAvailability(digestion::pendingValue, List.of(digestionVolume), digestion);
         bindAvailability(() -> lowHealth.pendingValue() && !anxiety.pendingValue(), List.of(lowHealthVolume), lowHealth, anxiety);
         bindAvailability(() -> lowHealth.pendingValue() && anxiety.pendingValue(), List.of(anxietyVolume), lowHealth, anxiety);
+        bindAvailability(caveAmbience::pendingValue, List.of(caveAmbienceVolume), caveAmbience);
+        bindAvailability(caveEvents::pendingValue, List.of(caveEventsVolume), caveEvents);
 
         ConfigCategory.Builder volumeCategory = ConfigCategory.createBuilder()
                 .name(Component.literal("Volume & Mixing"))
@@ -127,7 +147,10 @@ public final class AZConfigScreen {
                 .option(digestionVolume)
                 .option(LabelOption.create(Component.literal("\u2014 LOW-HEALTH AUDIO \u2014")))
                 .option(lowHealthVolume)
-                .option(anxietyVolume);
+                .option(anxietyVolume)
+                .option(LabelOption.create(Component.literal("\u2014 CAVE ENVIRONMENT \u2014")))
+                .option(caveAmbienceVolume)
+                .option(caveEventsVolume);
         addCategoryReset(volumeCategory, volumeOptions);
 
         // Visual Effects

@@ -1,6 +1,10 @@
-﻿# Sound Asset Credits
+# Sound Asset Credits
 
 The additional stomach recordings used by IndicationSounds are real human stomach recordings. The accepted OGG files include original cuts and processed variants (pitch, EQ, envelope, and layering). Each generated file is mapped to its source recording, creator, source page, and licence in [SOUND-ATTRIBUTION.csv](SOUND-ATTRIBUTION.csv).
+
+## Cave ambience audio — CC0 (user-confirmed)
+
+The user confirms that all six original cave recordings are licensed under Creative Commons Zero (CC0). The original source links and creator details could not be recovered, so they are intentionally left unknown rather than guessed. This confirmation is recorded in `SOUND-ATTRIBUTION.csv`; generated OGGs are derivatives of those CC0 recordings.
 
 ## Sources
 

@@ -13,6 +13,7 @@ IndicationSounds adds subtle audio and visual feedback to Minecraft, making play
 - **Low Health Audio** â€” Sound indications when your health becomes dangerously low.
 - **Anxiety Music** â€” Optional atmospheric music that responds to dangerous situations, with smooth music fading.
 - **Underwater Audio** â€” Low-pass audio filtering while submerged.
+- **Cave Ambience** — Quiet/loud ambience beds, randomized cave events and water droplets, vanilla music ducking, and underwater/low-health muffling.
 - **Low Health Audio Filtering** â€” Additional muffling to reinforce the feeling of being critically injured.
 - **Visual Feedback** â€” Low-health vignette and damage flash effects.
 
@@ -29,6 +30,12 @@ You can customize supported sound and visual effects without manually editing co
 - Fabric API
 - Mod Menu (for the configuration screen)
 - YetAnotherConfigLib (YACL)
+
+## Recommended Mods
+
+- **Sound Physics Remastered** — recommended* for enhanced cave acoustics; adds realistic sound attenuation, reverberation and absorption.
+
+*Optional recommendation only. Sound Physics Remastered is not required; IndicationSounds works without it.
 
 ## Installation
 
